@@ -1,0 +1,5 @@
+.DS_Store
+*.log
+
+# Datos de pruebas locales de Postgres, si los generas
+pg/
