@@ -10,7 +10,7 @@
    Al cambiar VERSION se descarta la copia anterior y se descarga todo de nuevo.
    ============================================================================= */
 
-const VERSION = 'listado-v1-2026-09-13';
+const VERSION = 'listado-v2-2026-09-13';
 
 /* El armazón de la app. Si añades un archivo nuevo, ponlo aquí y sube VERSION. */
 const ARMAZON = [
@@ -87,18 +87,34 @@ self.addEventListener('fetch', function (evento) {
     return;
   }
 
-  // Resto: se responde con la copia y se refresca por detrás.
-  evento.respondWith(
-    caches.match(peticion).then(function (guardada) {
-      const enRed = fetch(peticion).then(function (respuesta) {
-        if (respuesta && respuesta.ok) {
-          const copia = respuesta.clone();
-          caches.open(VERSION).then(function (cache) { cache.put(peticion, copia); });
-        }
-        return respuesta;
-      }).catch(function () { return guardada; });
+  // Librerías de CDN: la URL lleva la versión, así que la copia nunca caduca.
+  if (url.origin !== self.location.origin) {
+    evento.respondWith(
+      caches.match(peticion).then(function (guardada) {
+        return guardada || fetch(peticion).then(function (respuesta) {
+          if (respuesta && respuesta.ok) {
+            const copia = respuesta.clone();
+            caches.open(VERSION).then(function (cache) { cache.put(peticion, copia); });
+          }
+          return respuesta;
+        });
+      })
+    );
+    return;
+  }
 
-      return guardada || enRed;
+  /* Archivos propios: primero la red, y la copia sólo si no hay conexión.
+     Al revés (copia primero) la app abre un pelín antes, pero después de
+     publicar una versión nueva seguirías viendo la vieja durante un rato. */
+  evento.respondWith(
+    fetch(peticion).then(function (respuesta) {
+      if (respuesta && respuesta.ok) {
+        const copia = respuesta.clone();
+        caches.open(VERSION).then(function (cache) { cache.put(peticion, copia); });
+      }
+      return respuesta;
+    }).catch(function () {
+      return caches.match(peticion);
     })
   );
 });

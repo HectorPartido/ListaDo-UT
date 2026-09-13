@@ -875,7 +875,7 @@ select:focus, .input:focus, textarea:focus { border-color: var(--accent); box-sh
 .notice .ic { width: 17px; height: 17px; margin-top: 1px; }
 
 /* ---------- Horario: rejilla semanal ---------- */
-.tt-scroll { overflow-x: auto; padding: 4px 2px 2px; }
+.tt-scroll { overflow-x: auto; padding: 4px 2px 14px; }
 .tt { display: flex; min-width: 620px; gap: 1px; background: var(--border); }
 .tt-ruler { width: 52px; flex: none; background: var(--surface); }
 .tt-col { flex: 1; min-width: 78px; background: var(--surface); }

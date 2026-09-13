@@ -114,13 +114,24 @@
 
   /* ----------------------------- Rejilla -------------------------------- */
 
+  var HORAS_MINIMAS = 6;   // con una o dos clases la rejilla quedaría minúscula
+
   /** Franja horaria que hay que dibujar, redondeada a horas completas. */
   function range() {
     var slots = S.state.schedule;
     if (!slots.length) return FALLBACK;
+
     var min = Math.min.apply(null, slots.map(function (c) { return U.toMin(c.start); }));
     var max = Math.max.apply(null, slots.map(function (c) { return U.toMin(c.end); }));
-    return [Math.floor(min / 60), Math.ceil(max / 60)];
+    var desde = Math.floor(min / 60);
+    var hasta = Math.ceil(max / 60);
+
+    // Se estira hacia abajo, y si no cabe, hacia arriba (sin salirse del día).
+    if (hasta - desde < HORAS_MINIMAS) {
+      hasta = Math.min(23, desde + HORAS_MINIMAS);
+      if (hasta - desde < HORAS_MINIMAS) desde = Math.max(0, hasta - HORAS_MINIMAS);
+    }
+    return [desde, hasta];
   }
 
   function weekGrid(info) {
