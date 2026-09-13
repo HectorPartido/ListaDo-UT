@@ -289,11 +289,10 @@
       };
 
       if (isNew) {
-        var created = S.newTask({});
-        Object.assign(created, patch);
-        if (patch.status === 'hecha') created.completedAt = new Date().toISOString();
-        S.state.tasks.push(created);
-        S.emit();
+        // Tiene que pasar por store.addTask: es quien apunta la tarea en la
+        // cola de subida. Insertarla a mano en el estado la dejaba sólo en este
+        // navegador, y la siguiente sincronización se la llevaba por delante.
+        S.addTask(patch);
         ui.toast('Tarea creada.');
       } else {
         S.updateTask(task.id, patch);

@@ -23,14 +23,35 @@
   var subiendo = false;
   var reintento = null;
   var fallos = 0;
-  var estado = 'apagado';       // apagado | sin-sesion | al-dia | pendiente | subiendo | sin-conexion | error
+  var estado = 'apagado';       // apagado | sin-sesion | al-dia | pendiente |
+                                // subiendo | sin-conexion | error | atascado
   var oyentes = [];
   var ultimoAviso = 0;
 
   /* ------------------------------- Estado -------------------------------- */
 
   sync.status = function () {
-    return { estado: estado, pendientes: cola.length, sinConexion: !navigator.onLine };
+    return {
+      estado: estado,
+      pendientes: cola.length,
+      atascadas: cola.filter(function (op) { return op.err; }).length,
+      sinConexion: !navigator.onLine
+    };
+  };
+
+  /**
+   * Entidades con cambios sin subir, por tipo: lo que no puede pisar el
+   * servidor al sincronizar. Lo usa store.applyRemote().
+   * @returns {{task?:string[], member?:string[], subject?:string[], class?:string[]}}
+   */
+  sync.protegidos = function () {
+    var out = {};
+    cola.forEach(function (op) {
+      if (!op.id || op.t.indexOf('.save') < 0) return;
+      var tipo = op.t.split('.')[0];
+      (out[tipo] = out[tipo] || []).push(op.id);
+    });
+    return out;
   };
 
   sync.onStatus = function (fn) { oyentes.push(fn); };
@@ -151,29 +172,48 @@
     subiendo = true;
     anuncia('subiendo');
 
+    var quita = function (op) {
+      var i = cola.indexOf(op);
+      if (i >= 0) cola.splice(i, 1);
+    };
+
     var siguiente = function () {
-      if (!cola.length) {
+      // Las marcadas con error se saltan para no bloquear a las demás, pero
+      // NO se borran: son el único registro de esos datos.
+      var op = cola.filter(function (o) { return !o.err; })[0];
+
+      if (!op) {
         subiendo = false;
         fallos = 0;
-        anuncia('al-dia');
+        anuncia(cola.length ? 'atascado' : 'al-dia');
         return Promise.resolve();
       }
 
-      var op = cola[0];
       return ejecuta(op).then(function () {
-        cola.shift();
+        confirma(op);            // ya está en el servidor: deja de ser rescatable
+        quita(op);
         guardaCola();
         return siguiente();
       }, function (err) {
         subiendo = false;
 
         if (err && err.code) {
-          // Error del servidor (permisos, restricción, fila inexistente):
-          // reintentarlo eternamente no va a arreglarlo.
-          console.warn('[ListaDo] Se descarta una operación:', op.t, err.code, err.message);
-          cola.shift();
+          /* Error del servidor (permisos, restricción, una fila que aún no
+             existe...). Se reintenta UNA vez al final de la cola: muchas veces
+             es cuestión de orden — una tarea que menciona a un compañero que
+             todavía no se ha subido. Si vuelve a fallar se marca y se queda
+             ahí; así los datos no se pierden y se ven en el indicador. */
+          op.intentos = (op.intentos || 0) + 1;
+          quita(op);
+          if (op.intentos < 2) {
+            cola.push(op);
+          } else {
+            op.err = err.message || err.code;
+            cola.push(op);
+            console.warn('[ListaDo] Cambio sin subir:', op.t, err.code, err.message);
+            avisaUnaVez('Algo no se pudo guardar en la nube: ' + op.err);
+          }
           guardaCola();
-          avisaUnaVez('Algo no se pudo guardar en la nube: ' + (err.message || err.code));
           programa(300);
           return Promise.resolve();
         }
@@ -188,6 +228,28 @@
 
     return siguiente();
   };
+
+  /**
+   * Marca la entidad como confirmada en el servidor. Mientras no lo esté,
+   * store.applyRemote() la rescata en vez de dejar que la borre una
+   * sincronización: es la red de seguridad para cualquier dato que, por el
+   * motivo que sea, no haya llegado a subir.
+   */
+  function confirma(op) {
+    if (!op.id || op.t.indexOf('.save') < 0) return;
+    var S = LD.store;
+    var entidad = {
+      task: S.taskById, member: S.memberById,
+      subject: S.subjectById, class: S.classById
+    }[op.t.split('.')[0]];
+    if (!entidad) return;
+
+    var x = entidad.call(S, op.id);
+    if (x && !x.__nube) {
+      x.__nube = true;
+      S.save();
+    }
+  }
 
   /** Evita empapelar al usuario con el mismo aviso una y otra vez. */
   function avisaUnaVez(texto) {
@@ -209,10 +271,16 @@
     if (!navigator.onLine) { anuncia('sin-conexion'); return Promise.resolve(false); }
 
     return sync.flush().then(function () {
-      if (cola.length) return false;           // quedó algo sin subir: no pisamos nada
+      // Si queda algo que todavía puede subir, no se trae nada: primero sube.
+      // Con lo atascado sí se sincroniza, porque applyRemote lo protege.
+      var porSubir = cola.filter(function (op) { return !op.err; }).length;
+      if (porSubir) return false;
+
       return LD.api.pull().then(function (res) {
         LD.store.applyRemote(res);
-        anuncia('al-dia');
+        // Si quedan cambios rechazados hay que seguir diciéndolo: "al día" con
+        // cosas sin subir sería mentira.
+        anuncia(cola.length ? 'atascado' : 'al-dia');
         return true;
       }, function (err) {
         console.warn('[ListaDo] No se pudo traer los datos:', err.message);
@@ -227,6 +295,12 @@
   sync.start = function () {
     if (!LD.api.enabled) { anuncia('apagado'); return; }
     cargaCola();
+
+    // Al abrir la app se vuelve a intentar lo que quedó atascado: puede que la
+    // causa (una fila que faltaba, un permiso) ya no exista.
+    cola.forEach(function (op) { delete op.err; delete op.intentos; });
+    guardaCola();
+
     anuncia(cola.length ? 'pendiente' : 'al-dia');
 
     global.addEventListener('online', function () {

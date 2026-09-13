@@ -124,16 +124,30 @@
       if (LD.sync) LD.sync.push(tipo, id);
     },
 
-    /** Sustituye el estado por el que viene del servidor. */
+    /**
+     * Sustituye el estado por el que viene del servidor, PERO conservando lo
+     * que todavía está en la cola de subida. Sin esto, cualquier cosa creada
+     * aquí y no subida aún desaparecería al sincronizar.
+     */
     applyRemote: function (res) {
       aplicandoRemoto = true;
       try {
-        this.state = migrate(res.state);
+        var anterior = this.state;
+        var nuevo = migrate(res.state);
+        var rescatadas = rescataNoSubidas(anterior, nuevo,
+          LD.sync ? LD.sync.protegidos() : {});
+
+        this.state = nuevo;
         this.state.group = res.group || null;
         this.state.profile = res.profile
           ? { display_name: res.profile.display_name || '' }
           : null;
         this.emit();
+
+        if (rescatadas && LD.ui) {
+          LD.ui.toast(rescatadas + ' ' + U.plural(rescatadas, 'cambio') +
+            ' sin subir todavía; se conservan aquí.');
+        }
       } finally {
         aplicandoRemoto = false;
       }
@@ -186,6 +200,7 @@
       Object.keys(patch || {}).forEach(function (k) {
         if (patch[k] !== undefined && patch[k] !== null && patch[k] !== '') task[k] = patch[k];
       });
+      if (task.status === 'hecha' && !task.completedAt) task.completedAt = now;
       return task;
     },
 
@@ -947,6 +962,38 @@
     }
   };
 
+  /**
+   * Devuelve al estado nuevo las entidades que siguen en la cola de subida y
+   * que el servidor todavía no conoce. Las que ya se subieron y no vienen es
+   * porque se borraron desde otro dispositivo: ésas sí desaparecen.
+   * @returns {number} cuántas se han rescatado
+   */
+  function rescataNoSubidas(anterior, nuevo, protegidos) {
+    var pares = [['task', 'tasks'], ['member', 'members'],
+                 ['subject', 'subjects'], ['class', 'schedule']];
+    var total = 0;
+
+    pares.forEach(function (par) {
+      var ids = protegidos[par[0]] || [];
+
+      var yaEsta = {};
+      nuevo[par[1]].forEach(function (x) { yaEsta[x.id] = true; });
+
+      anterior[par[1]].forEach(function (x) {
+        if (yaEsta[x.id]) return;
+        // Se rescata lo que está en la cola y, sobre todo, lo que el servidor
+        // nunca confirmó: si algo se creó aquí y no llegó a subir, no se pierde
+        // aunque la cola no lo supiera.
+        if (ids.indexOf(x.id) >= 0 || !x.__nube) {
+          nuevo[par[1]].push(x);
+          total++;
+        }
+      });
+    });
+
+    return total;
+  }
+
   /** Abreviatura automática a partir de un nombre ("Bases de Datos" -> "BDD"). */
   function autoCode(name) {
     var words = String(name).trim().split(/\s+/).filter(function (w) { return w.length > 2; });
@@ -974,6 +1021,7 @@
 
     out.subjects = out.subjects.map(function (s, i) {
       return {
+        __nube: !!s.__nube,
         id: s.id || U.uid(),
         name: String(s.name || 'Asignatura'),
         code: String(s.code || ''),
@@ -987,6 +1035,7 @@
 
     out.members = out.members.map(function (m, i) {
       return {
+        __nube: !!m.__nube,
         id: m.id || U.uid(),
         name: String(m.name || 'Compañero'),
         alias: String(m.alias || ''),
@@ -1021,6 +1070,7 @@
         status: ids.status[t.status] ? t.status : 'pendiente',
         estimate: t.estimate === 0 || t.estimate ? Number(t.estimate) : null,
         weight: t.weight === 0 || t.weight ? Number(t.weight) : null,
+        __nube: !!t.__nube,
         subtasks: Array.isArray(t.subtasks) ? t.subtasks.map(function (s) {
           return { id: s.id || U.uid(), text: String(s.text || ''), done: !!s.done };
         }) : [],
@@ -1036,6 +1086,7 @@
       var end = U.isTime(c.end) ? c.end : U.fromMin(U.toMin(start) + 60);
       if (U.toMin(end) <= U.toMin(start)) end = U.fromMin(U.toMin(start) + 60);
       return {
+        __nube: !!c.__nube,
         id: c.id || U.uid(),
         subjectId: validSubject[c.subjectId] ? c.subjectId : '',
         title: String(c.title || ''),

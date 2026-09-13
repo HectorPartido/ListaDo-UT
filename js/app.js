@@ -724,7 +724,9 @@
       pendiente:      ['refresh',     'is-working',  est.pendientes + ' cambio(s) por subir'],
       subiendo:       ['refresh',     'is-working',  'Subiendo cambios…'],
       'sin-conexion': ['cloud-off',   'is-offline',  'Sin conexión · ' + est.pendientes + ' cambio(s) en cola'],
-      error:          ['cloud-off',   'is-error',    'No se ha podido subir; se reintentará']
+      error:          ['cloud-off',   'is-error',    'No se ha podido subir; se reintentará'],
+      atascado:       ['alert-triangle', 'is-error', est.atascadas + ' cambio(s) que el servidor rechaza. ' +
+                                                     'Se conservan aquí; mira Grupo → Sincronización']
     };
     var conf = mapa[est.estado] || mapa['al-dia'];
 

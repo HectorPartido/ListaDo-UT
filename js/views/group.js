@@ -112,6 +112,13 @@
           '</div>' +
           '<p class="small muted">Los cambios se guardan al momento en este dispositivo y se suben en segundo plano. ' +
             'Sin conexión se quedan en cola y salen solos al volver la red.</p>' +
+          (est.atascadas
+            ? '<div class="notice t-warn">' + ico.svg('alert-triangle') +
+              '<span><strong>' + est.atascadas + ' ' + U.plural(est.atascadas, 'cambio') +
+              ' que el servidor no acepta.</strong> No se han perdido: siguen guardados en este ' +
+              'dispositivo y se reintentan al abrir la app. Si eres miembro de un grupo, puede ser ' +
+              'que intentes cambiar algo que sólo puede tocar quien lo creó.</span></div>'
+            : '') +
         '</div>' +
       '</section>';
 
@@ -154,6 +161,7 @@
       subiendo: 'subiendo…',
       'sin-conexion': 'sin conexión · ' + est.pendientes + ' en cola',
       error: 'error al subir',
+      atascado: est.atascadas + ' sin subir',
       'sin-sesion': 'sin sesión',
       apagado: 'sólo en este navegador'
     }[est.estado] || est.estado;

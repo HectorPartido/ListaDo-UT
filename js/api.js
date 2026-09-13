@@ -131,6 +131,7 @@
 
   function taskFromRow(r) {
     return {
+      __nube: true,            // viene del servidor: está confirmado
       id: r.id,
       title: r.title,
       notes: r.notes || '',
@@ -158,7 +159,8 @@
   }
 
   function subjectFromRow(r) {
-    return { id: r.id, name: r.name, code: r.code || '', teacher: r.teacher || '', color: r.color };
+    return { __nube: true, id: r.id, name: r.name, code: r.code || '',
+             teacher: r.teacher || '', color: r.color };
   }
 
   function classToRow(c, groupId) {
@@ -176,6 +178,7 @@
 
   function classFromRow(r) {
     return {
+      __nube: true,
       id: r.id, subjectId: r.subject_id || '', title: r.title || '',
       day: Number(r.day), start: hhmm(r.start_time), end: hhmm(r.end_time),
       room: r.room || '', teacher: r.teacher || ''
@@ -192,6 +195,7 @@
 
   function memberFromRow(r) {
     return {
+      __nube: true,
       id: r.id, name: r.name, alias: r.alias || '', email: r.email || '',
       phone: r.phone || '', notes: r.notes || '', color: r.color,
       subjectIds: [], createdAt: r.created_at
