@@ -217,13 +217,14 @@ kbd {
 .sb-actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .sb-hint { color: var(--muted); font-size: .74rem; line-height: 1.9; padding: 6px 4px 0; border-top: 1px solid var(--border); }
 .install-btn {
-  width: 100%;
-  justify-content: center;
+  height: 34px;
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
   background: var(--accent-soft);
+  animation: aparecer .3s ease-out;
 }
 .install-btn:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+@keyframes aparecer { from { opacity: 0; transform: scale(.94) } }
 
 .main { display: flex; flex-direction: column; min-width: 0; }
 
@@ -1209,6 +1210,8 @@ select:focus, .input:focus, textarea:focus { border-color: var(--accent); box-sh
 
 @media (max-width: 560px) {
   .topbar-actions .btn-primary { width: 38px; padding: 0; }
+  .install-btn { width: 34px; padding: 0; justify-content: center; }
+  .install-btn .txt { display: none; }
   .sync-pill { padding: 0 7px; }
   .gate-card { padding: 20px 18px 16px; }
   .group-code { font-size: 1.25rem; padding: 7px 12px; }

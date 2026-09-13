@@ -686,8 +686,26 @@
         render();
       })
       .catch(function (err) {
-        console.warn('[ListaDo] Arranque con la nube incompleto:', err.message);
-        ui.toast('No se pudo conectar con la nube; trabajas con la copia local.');
+        /* Sin `code` es que se ha caído la red: se sigue con la copia local,
+           que para eso está. Con `code` responde el servidor, y si no deja ni
+           crear el perfil es que la cuenta ya no existe (borrada desde el panel
+           de Supabase) aunque el navegador guarde todavía un token válido.
+           Dejarlo pasar mostraría una app vacía sin explicación. */
+        if (!err || !err.code) {
+          console.warn('[ListaDo] Arranque con la nube incompleto:', err && err.message);
+          ui.toast('No se pudo conectar con la nube; trabajas con la copia local.');
+          return;
+        }
+
+        console.warn('[ListaDo] La cuenta ya no es válida:', err.code, err.message);
+        sesionArrancada = false;
+        LD.sync.reset();
+        LD.api.signOut().then(function () {
+          showApp(false);
+          LD.authUI.mensaje = 'Tu sesión ya no es válida. Vuelve a entrar o crea una cuenta.';
+          LD.authUI.show('entrar');
+          ui.toast('Esa cuenta ya no existe. Entra de nuevo.');
+        });
       });
   };
 
@@ -770,29 +788,38 @@
     });
   }
 
-  /** Botón de instalar: Android lo ofrece con el evento beforeinstallprompt. */
+  /* Chrome avisa de que la app es instalable en cuanto procesa el manifest, y
+     eso puede pasar ANTES de que arranque init(). Por eso se escucha aquí, en
+     cuanto se carga el archivo, y se guarda la invitación para más tarde. */
+  var invitacionInstalar = null;
+
+  global.addEventListener('beforeinstallprompt', function (ev) {
+    ev.preventDefault();                 // usamos nuestro botón, no el del navegador
+    invitacionInstalar = ev;
+    var boton = document.getElementById('install-btn');
+    if (boton) boton.classList.remove('hidden');
+  });
+
+  /** Botón de instalar de la barra lateral. */
   function prepararInstalacion() {
-    var invitacion = null;
     var boton = U.$('#install-btn');
     if (!boton) return;
 
-    global.addEventListener('beforeinstallprompt', function (ev) {
-      ev.preventDefault();               // usamos nuestro botón, no el del navegador
-      invitacion = ev;
-      boton.classList.remove('hidden');
-    });
+    // Si el aviso llegó antes de llegar aquí, el botón se muestra ya.
+    if (invitacionInstalar) boton.classList.remove('hidden');
 
     boton.addEventListener('click', function () {
-      if (!invitacion) return;
-      invitacion.prompt();
-      invitacion.userChoice.then(function (res) {
+      if (!invitacionInstalar) return;
+      invitacionInstalar.prompt();
+      invitacionInstalar.userChoice.then(function (res) {
         if (res.outcome === 'accepted') boton.classList.add('hidden');
-        invitacion = null;
+        invitacionInstalar = null;
       });
     });
 
     global.addEventListener('appinstalled', function () {
       boton.classList.add('hidden');
+      invitacionInstalar = null;
       ui.toast('ListaDo instalada. Ya puedes abrirla desde la pantalla de inicio.');
     });
   }

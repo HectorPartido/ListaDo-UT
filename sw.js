@@ -10,7 +10,7 @@
    Al cambiar VERSION se descarta la copia anterior y se descarga todo de nuevo.
    ============================================================================= */
 
-const VERSION = 'listado-v2-2026-09-13';
+const VERSION = 'listado-v3-2026-09-14';
 
 /* El armazón de la app. Si añades un archivo nuevo, ponlo aquí y sube VERSION. */
 const ARMAZON = [

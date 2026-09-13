@@ -35,9 +35,6 @@
         <button class="btn btn-ghost btn-sm is-danger" data-app="reset"><span data-icon="trash"></span> Borrar todo</button>
       </div>
       <input type="file" id="import-file" accept="application/json,.json" hidden>
-      <button class="btn btn-sm install-btn hidden" id="install-btn">
-        <span data-icon="download"></span> Instalar la app
-      </button>
       <p class="sb-hint">
         <kbd>N</kbd> nueva tarea · <kbd>/</kbd> buscar · <kbd>1</kbd>–<kbd>8</kbd> vistas
       </p>
@@ -52,6 +49,9 @@
         <input id="search" type="search" placeholder="Buscar tareas, asignaturas, notas…" autocomplete="off" aria-label="Buscar">
       </label>
       <div class="topbar-actions">
+        <button class="btn btn-sm install-btn hidden" id="install-btn" title="Instalar ListaDo en este dispositivo">
+          <span data-icon="download"></span> <span class="txt">Instalar la app</span>
+        </button>
         <span id="sync-status" class="sync-pill hidden" role="status"></span>
         <button class="btn btn-ghost btn-icon" data-app="theme" title="Cambiar tema" aria-label="Cambiar tema"></button>
         <button class="btn btn-primary" data-app="new-task"><span data-icon="plus"></span> <span class="txt">Nueva tarea</span></button>
