@@ -43,7 +43,6 @@
 
   <main class="main">
     <header class="topbar">
-      <button class="btn btn-icon only-mobile" data-app="menu" data-icon="menu" aria-label="Abrir menú"></button>
       <label class="search">
         <span class="s-ico" data-icon="search" aria-hidden="true"></span>
         <input id="search" type="search" placeholder="Buscar tareas, asignaturas, notas…" autocomplete="off" aria-label="Buscar">
@@ -60,6 +59,9 @@
 
     <div id="view" class="view" tabindex="-1"></div>
   </main>
+
+  <!-- Navegación de móvil: las cuatro vistas de uso diario y el resto en «Más» -->
+  <nav class="tabbar" id="tabbar" aria-label="Navegación"></nav>
 </div>
 
 <!-- Puerta de entrada: se muestra mientras no haya sesión -->

@@ -211,6 +211,18 @@ pertenecen**.
   tus tareas se reasignan emparejando las asignaturas por nombre o abreviatura.
 - El dueño puede **cambiar el código** si se ha repartido de más.
 
+## En el móvil
+
+La navegación está abajo, donde llega el pulgar: una barra fija con las cuatro
+vistas de uso diario —**Panel, Tareas, Calendario y Horario**— más **Más**, que
+abre un panel deslizante con el resto (Asignaturas, Equipo, Estadísticas, Grupo)
+y las opciones de datos. Ocho iconos en una sola barra saldrían a 51 px cada uno
+en una pantalla de 412 px, ilegibles; de ahí el reparto.
+
+Los contadores van sobre el icono: las tareas sin terminar en **Tareas** y, en
+rojo, las atrasadas en **Panel**. Al crear o editar una tarea la barra se
+esconde, porque ahí abajo están los botones de guardar.
+
 ## Instalar en el móvil
 
 La app es una PWA. En Chrome para Android, al abrir la web aparece el botón

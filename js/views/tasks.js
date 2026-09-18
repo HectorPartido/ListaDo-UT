@@ -46,7 +46,7 @@
         '<div class="field"><label>Agrupar</label><div class="segmented">' +
           ['due', 'subject', 'priority', 'type', 'none'].map(function (g) {
             var labels = { due: 'Fecha', subject: 'Asignatura', priority: 'Prioridad', type: 'Tipo', none: 'Sin grupos' };
-            return '<button data-group="' + g + '" class="' + (f.groupBy === g ? 'active' : '') + '">' + labels[g] + '</button>';
+            return '<button data-groupby="' + g + '" class="' + (f.groupBy === g ? 'active' : '') + '">' + labels[g] + '</button>';
           }).join('') +
         '</div></div>' +
         '<div class="spacer"></div>' +
@@ -107,7 +107,10 @@
 
   /** Divide la lista ya ordenada en grupos con título. */
   function groupTasks(tasks, mode) {
-    if (mode === 'none') return [{ title: '', tasks: tasks }];
+    // Ante un modo que no existe, la lista entera sin agrupar: nunca vacía.
+    if (['due', 'subject', 'priority', 'type'].indexOf(mode) < 0) {
+      return [{ title: '', tasks: tasks }];
+    }
 
     var buckets = [];
     var index = {};

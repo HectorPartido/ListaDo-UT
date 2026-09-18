@@ -35,6 +35,42 @@
     else location.hash = '#/' + name;
   };
 
+  /* Las cuatro vistas que se usan a diario; las demás caben en «Más». Ocho
+     iconos en una barra de 412 px saldrían a 51 px cada uno, ilegibles. */
+  var MOVIL = ['dashboard', 'tasks', 'calendar', 'schedule'];
+
+  /** Barra inferior de móvil. Se mantiene en paralelo a la barra lateral. */
+  function renderTabbar() {
+    var host = U.$('#tabbar');
+    if (!host) return;
+
+    var counts = S.counts();
+    var enLaBarra = MOVIL.indexOf(app.current) >= 0;
+
+    var html = MOVIL.map(function (id) {
+      var v = LD.views[id];
+      var alerta = id === 'dashboard' && counts.overdue > 0;
+      var n = alerta ? counts.overdue : (v.countKey ? counts[v.countKey] : 0);
+
+      return '<button class="tab' + (id === app.current ? ' active' : '') + '" ' +
+        'data-view="' + id + '" aria-label="' + U.esc(v.label) + '"' +
+        (id === app.current ? ' aria-current="page"' : '') + '>' +
+        '<span class="tab-ic">' + ico.svg(v.icon) +
+          (n ? '<i class="tab-n' + (alerta ? ' alert' : '') + '">' + (n > 9 ? '9+' : n) + '</i>' : '') +
+        '</span>' +
+        '<span class="tab-t">' + U.esc(v.label) + '</span>' +
+      '</button>';
+    }).join('');
+
+    // «Más» abre el panel con el resto de vistas y las opciones de datos.
+    html += '<button class="tab' + (enLaBarra ? '' : ' active') + '" data-app="menu" aria-label="Más opciones">' +
+      '<span class="tab-ic">' + ico.svg('menu') + '</span>' +
+      '<span class="tab-t">Más</span>' +
+    '</button>';
+
+    host.innerHTML = html;
+  }
+
   function renderNav() {
     var counts = S.counts();
     U.$('#nav').innerHTML = ORDER.map(function (id, i) {
@@ -57,6 +93,8 @@
         badges +
       '</button>';
     }).join('');
+
+    renderTabbar();
   }
 
   function render() {
@@ -76,6 +114,8 @@
       var previa = LD.views[anterior];
       if (previa && previa.leave) previa.leave();
     }
+
+    U.$('#app').classList.toggle('sin-tabbar', !!v.oculta);
 
     var host = U.$('#view');
     host.innerHTML = v.render(ruta.arg);
@@ -883,11 +923,14 @@
     document.addEventListener('keydown', onKeydown);
     U.$('#search').addEventListener('input', function (ev) { onSearch(ev.target.value); });
 
-    /* Segmentos de agrupación de la vista Tareas */
+    /* Segmentos de agrupación de la vista Tareas. Atributo propio: `data-group`
+       ya lo usan los botones de la vista Grupo, y con el mismo nombre pulsar
+       «Copiar el código» dejaba la lista de tareas agrupada por «copy», es
+       decir, vacía. */
     document.addEventListener('click', function (ev) {
-      var el = ev.target.closest('[data-group]');
+      var el = ev.target.closest('[data-groupby]');
       if (!el) return;
-      S.ui.groupBy = el.dataset.group;
+      S.ui.groupBy = el.dataset.groupby;
       render();
     });
 
