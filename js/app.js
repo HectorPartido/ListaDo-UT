@@ -15,10 +15,20 @@
 
   /* ------------------------------ Navegación ----------------------------- */
 
-  function viewFromHash() {
-    var name = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
-    return LD.views[name] ? name : 'dashboard';
+  /**
+   * Parte la ruta en vista y parámetro: '#/task/abc' -> {name:'task', arg:'abc'}
+   * Lo necesita el editor de tareas, que es una vista con su propia URL.
+   */
+  function parseHash() {
+    var crudo = (location.hash || '').replace(/^#\/?/, '').split('?')[0];
+    var partes = crudo.split('/');
+    return {
+      name: LD.views[partes[0]] ? partes[0] : 'dashboard',
+      arg: partes.slice(1).join('/')
+    };
   }
+
+  function viewFromHash() { return parseHash().name; }
 
   app.go = function (name) {
     if (location.hash === '#/' + name) render();
@@ -50,17 +60,34 @@
   }
 
   function render() {
-    app.current = viewFromHash();
+    var ruta = parseHash();
+    var anterior = app.current;
+    app.current = ruta.name;
+
     var v = LD.views[app.current];
     document.title = 'ListaDo · ' + v.label;
-    S.setSetting('lastView', app.current);
+
+    // El editor de tareas no se recuerda como «última vista»: reabrir la app
+    // en un formulario vacío no tendría sentido.
+    if (!v.oculta) S.setSetting('lastView', app.current);
+
+    // Al dejar una vista se le avisa, por si tiene algo que soltar.
+    if (anterior && anterior !== app.current) {
+      var previa = LD.views[anterior];
+      if (previa && previa.leave) previa.leave();
+    }
 
     var host = U.$('#view');
-    host.innerHTML = v.render();
+    host.innerHTML = v.render(ruta.arg);
+    host.scrollTop = 0;
     renderNav();
     if (v.mounted) v.mounted();
     restorePendingFocus();
   }
+
+  /** Abre el editor de tareas a pantalla completa. */
+  function abreTarea(id, preset) { LD.views.task.open(id, preset); }
+  app.openTask = abreTarea;
 
   /* Los campos de texto que filtran (buscador del equipo, por ejemplo) viven
      dentro de la vista, así que al re-pintar hay que devolverles el cursor. */
@@ -400,13 +427,18 @@
       return;
     }
 
+    /* Editor de tareas (pantalla completa) */
+    if ((el = ev.target.closest('[data-task]'))) {
+      if (LD.views.task.accion(el.dataset.task, el)) return;
+    }
+
     /* Acciones sobre tareas */
     if ((el = ev.target.closest('[data-action]'))) {
       id = el.dataset.id;
       switch (el.dataset.action) {
         case 'toggle-done': S.toggleDone(id); return;
         case 'cycle-status': S.cycleStatus(id); return;
-        case 'edit': modals.taskForm(id); return;
+        case 'edit': abreTarea(id); return;
         case 'delete': app.deleteTaskWithUndo(id); return;
         case 'toggle-subtask': S.toggleSubtask(id, el.dataset.sub); return;
       }
@@ -417,7 +449,7 @@
       id = el.dataset.id;
       switch (el.dataset.subject) {
         case 'edit': modals.subjectForm(id); return;
-        case 'add-task': modals.taskForm(null, { subjectId: id }); return;
+        case 'add-task': abreTarea(null, { subjectId: id }); return;
         case 'tasks':
           S.ui.subjectId = id;
           S.ui.status = 'open';
@@ -439,7 +471,7 @@
           }
           render();
           return;
-        case 'add': modals.taskForm(null, { due: el.dataset.date }); return;
+        case 'add': abreTarea(null, { due: el.dataset.date }); return;
       }
     }
 
@@ -448,7 +480,7 @@
       id = el.dataset.id;
       switch (el.dataset.memberAct) {
         case 'edit': modals.memberForm(id); return;
-        case 'add-task': modals.taskForm(null, { memberIds: [id] }); return;
+        case 'add-task': abreTarea(null, { memberIds: [id] }); return;
         case 'tasks':
           S.ui.memberId = id;
           S.ui.status = 'all';
@@ -512,7 +544,7 @@
     /* Acciones generales */
     if ((el = ev.target.closest('[data-app]'))) {
       switch (el.dataset.app) {
-        case 'new-task': modals.taskForm(null); return;
+        case 'new-task': abreTarea(null); return;
         case 'new-subject': modals.subjectForm(null); return;
         case 'new-member': modals.memberForm(null); return;
         case 'import-schedule': modals.importSchedule(); return;
@@ -584,7 +616,7 @@
     /* Espacio/Enter sobre el título de una tarea (accesible con teclado) */
     if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.classList && ev.target.classList.contains('task-title')) {
       ev.preventDefault();
-      modals.taskForm(ev.target.dataset.id);
+      abreTarea(ev.target.dataset.id);
       return;
     }
 
@@ -610,7 +642,7 @@
     /* N: nueva tarea · 1-5: vistas */
     if (ev.key === 'n' || ev.key === 'N') {
       ev.preventDefault();
-      setTimeout(function () { modals.taskForm(null); }, 0);
+      setTimeout(function () { abreTarea(null); }, 0);
       return;
     }
     var num = parseInt(ev.key, 10);
@@ -830,7 +862,7 @@
   function atenderAtajos() {
     if (location.search.indexOf('nueva') < 0) return;
     history.replaceState(null, '', location.pathname + location.hash);
-    setTimeout(function () { modals.taskForm(null); }, 250);
+    setTimeout(function () { abreTarea(null); }, 250);
   }
 
   function init() {
@@ -860,7 +892,15 @@
     });
 
     global.addEventListener('hashchange', render);
-    S.subscribe(render);
+
+    /* Las vistas `selfManaged` (el editor de tareas) se pintan solas: si se
+       re-pintaran con cada cambio de datos —una sincronización, por ejemplo—
+       se borraría lo que el usuario está escribiendo. */
+    S.subscribe(function () {
+      var v = LD.views[app.current];
+      if (v && v.selfManaged) { renderNav(); return; }
+      render();
+    });
 
     /* Sin cuenta configurada, la app funciona como siempre: sólo local. */
     if (!LD.api.enabled) {

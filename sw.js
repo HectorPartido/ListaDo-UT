@@ -10,7 +10,7 @@
    Al cambiar VERSION se descarta la copia anterior y se descarga todo de nuevo.
    ============================================================================= */
 
-const VERSION = 'listado-v3-2026-09-14';
+const VERSION = 'listado-v4-2026-09-18';
 
 /* El armazón de la app. Si añades un archivo nuevo, ponlo aquí y sube VERSION. */
 const ARMAZON = [
@@ -28,6 +28,7 @@ const ARMAZON = [
   './js/ui.js',
   './js/modals.js',
   './js/auth-ui.js',
+  './js/views/task-editor.js',
   './js/views/dashboard.js',
   './js/views/tasks.js',
   './js/views/calendar.js',
