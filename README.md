@@ -76,6 +76,22 @@ Memoria práctica 3 @BBDD !alta mañana ~3h #entrega %20
 
 Lo que no encaje en ningún atajo se queda como título de la tarea.
 
+## Crear una tarea
+
+El formulario es una **pantalla completa** (ya no un diálogo) con el calendario
+de clases al lado: al elegir la asignatura se marcan con su color los días en que
+tienes clase, con la hora, y aparecen atajos como **«Próxima clase · Lun 21
+sept»** y **«La siguiente · Jue 24 sept»** — que es como de verdad se dictan las
+entregas. Pulsar uno rellena la fecha y también la hora de inicio de esa clase.
+
+El calendario marca además los días en los que **ya tienes tareas**, con un punto
+naranja, para no acumular tres entregas el mismo día.
+
+En el móvil no hay dos columnas: el calendario aparece justo debajo de la fecha,
+las casillas son grandes para el dedo y los botones de guardar se quedan pegados
+abajo, así que no hay que subir para confirmar. La pantalla tiene su propia URL
+(`#/task/<id>`), así que se puede recargar sin perder nada.
+
 ## Atajos de teclado
 
 | Tecla | Acción |
@@ -272,7 +288,8 @@ js/ui.js              Piezas reutilizables: tarjeta de tarea, etiquetas, avisos
 js/modals.js          Formularios (tarea, asignatura, compañero, clase),
                       importador de horario y confirmaciones
 js/views/*.js         Una vista por archivo (dashboard, tasks, calendar,
-                      schedule, subjects, team, stats, group)
+                      schedule, subjects, team, stats, group) más
+                      task-editor.js: crear y editar tareas con el calendario
 js/app.js             Rutas por hash, delegación de eventos, atajos, tema, copias
 ```
 
