@@ -1355,12 +1355,18 @@ select:focus, .input:focus, textarea:focus { border-color: var(--accent); box-sh
     z-index: 40;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    background: color-mix(in srgb, var(--surface) 94%, transparent);
-    backdrop-filter: saturate(180%) blur(14px);
+    align-items: end;
+    /*  Fondo OPACO y capa propia a propósito: con `backdrop-filter` sobre un
+        elemento `position: fixed`, Chrome de Android no lo pintaba hasta que
+        algo forzaba un repintado (había que hacer scroll para verlo). Con un
+        color sólido y `translateZ(0)` aparece desde el primer fotograma.      */
+    background: var(--surface);
+    transform: translateZ(0);
     border-top: 1px solid var(--border);
     /* Hueco para la barra de gestos del teléfono */
     padding-bottom: env(safe-area-inset-bottom);
-    box-shadow: 0 -2px 16px -8px rgba(0, 0, 0, .25);
+    box-shadow: 0 -2px 16px -10px rgba(0, 0, 0, .35);
+    overflow: visible;             /* el botón central sobresale */
   }
 
   /* En el editor de tareas se oculta: los botones de guardar ya viven abajo */
@@ -1414,6 +1420,31 @@ select:focus, .input:focus, textarea:focus { border-color: var(--accent); box-sh
     text-align: center;
   }
   .tab .tab-n.alert { background: var(--danger); color: #fff; border-color: var(--surface); }
+
+  /* Crear tarea: levantado sobre la barra para que se lea como la acción
+     principal, y en el centro, donde llega el pulgar sin estirarse. */
+  .tab-add { padding-bottom: 8px; }
+  .tab-add .tab-fab {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    margin-top: -20px;
+    border-radius: 16px;
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--accent) 70%, transparent),
+                0 0 0 4px var(--surface);
+    transition: transform .12s;
+  }
+  .tab-add .tab-fab .ic { width: 25px; height: 25px; }
+  .tab-add:active { background: transparent; }
+  .tab-add:active .tab-fab { transform: scale(.92); }
+
+  /* Con el + en la barra, los demás botones de "nueva tarea" sobran: el de la
+     cabecera y los que repetían las vistas en su encabezado. */
+  .topbar-actions .btn-primary { display: none; }
+  .page-head [data-app="new-task"] { display: none; }
 
   /* Los avisos suben por encima de la barra */
   .toast-root { bottom: calc(72px + env(safe-area-inset-bottom)); }
@@ -1481,13 +1512,11 @@ select:focus, .input:focus, textarea:focus { border-color: var(--accent); box-sh
 }
 
 @media (max-width: 560px) {
-  .topbar-actions .btn-primary { width: 38px; padding: 0; }
   .install-btn { width: 34px; padding: 0; justify-content: center; }
   .install-btn .txt { display: none; }
   .sync-pill { padding: 0 7px; }
   .gate-card { padding: 20px 18px 16px; }
   .group-code { font-size: 1.25rem; padding: 7px 12px; }
-  .topbar-actions .btn-primary .txt { display: none; }
   .cal-day { min-height: 58px; padding: 3px; }
   .kpi .k-value { font-size: 1.4rem; }
 }

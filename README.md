@@ -213,11 +213,15 @@ pertenecen**.
 
 ## En el móvil
 
-La navegación está abajo, donde llega el pulgar: una barra fija con las cuatro
-vistas de uso diario —**Panel, Tareas, Calendario y Horario**— más **Más**, que
-abre un panel deslizante con el resto (Asignaturas, Equipo, Estadísticas, Grupo)
-y las opciones de datos. Ocho iconos en una sola barra saldrían a 51 px cada uno
-en una pantalla de 412 px, ilegibles; de ahí el reparto.
+La navegación está abajo, donde llega el pulgar: una barra fija con
+**Panel · Tareas · [+] · Horario · Más**. El botón de crear tarea ocupa el
+centro, levantado sobre la barra, porque es la acción que más se repite. «Más»
+abre un panel deslizante con el resto de vistas (Calendario, Asignaturas,
+Equipo, Estadísticas, Grupo) y las opciones de datos.
+
+Ocho iconos en una sola barra saldrían a 51 px cada uno en una pantalla de
+412 px, ilegibles; de ahí el reparto. Con el `+` en la barra desaparecen el de
+la cabecera y los que repetían las vistas en su encabezado.
 
 Los contadores van sobre el icono: las tareas sin terminar en **Tareas** y, en
 rojo, las atrasadas en **Panel**. Al crear o editar una tarea la barra se

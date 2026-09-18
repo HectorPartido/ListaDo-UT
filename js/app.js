@@ -35,9 +35,11 @@
     else location.hash = '#/' + name;
   };
 
-  /* Las cuatro vistas que se usan a diario; las demás caben en «Más». Ocho
-     iconos en una barra de 412 px saldrían a 51 px cada uno, ilegibles. */
-  var MOVIL = ['dashboard', 'tasks', 'calendar', 'schedule'];
+  /* Reparto de la barra: el botón de crear va en el centro, que es donde cae
+     el pulgar, y las vistas se reparten a los lados. Las que no caben están en
+     «Más» (ocho iconos en 412 px saldrían a 51 px cada uno, ilegibles). */
+  var TABS_IZQ = ['dashboard', 'tasks'];
+  var TABS_DER = ['schedule'];
 
   /** Barra inferior de móvil. Se mantiene en paralelo a la barra lateral. */
   function renderTabbar() {
@@ -45,9 +47,9 @@
     if (!host) return;
 
     var counts = S.counts();
-    var enLaBarra = MOVIL.indexOf(app.current) >= 0;
+    var enLaBarra = TABS_IZQ.concat(TABS_DER).indexOf(app.current) >= 0;
 
-    var html = MOVIL.map(function (id) {
+    var pestana = function (id) {
       var v = LD.views[id];
       var alerta = id === 'dashboard' && counts.overdue > 0;
       var n = alerta ? counts.overdue : (v.countKey ? counts[v.countKey] : 0);
@@ -60,15 +62,23 @@
         '</span>' +
         '<span class="tab-t">' + U.esc(v.label) + '</span>' +
       '</button>';
-    }).join('');
+    };
 
-    // «Más» abre el panel con el resto de vistas y las opciones de datos.
-    html += '<button class="tab' + (enLaBarra ? '' : ' active') + '" data-app="menu" aria-label="Más opciones">' +
-      '<span class="tab-ic">' + ico.svg('menu') + '</span>' +
-      '<span class="tab-t">Más</span>' +
-    '</button>';
+    host.innerHTML =
+      TABS_IZQ.map(pestana).join('') +
 
-    host.innerHTML = html;
+      // Crear tarea: el botón principal, en el centro y levantado
+      '<button class="tab tab-add" data-app="new-task" aria-label="Nueva tarea">' +
+        '<span class="tab-fab">' + ico.svg('plus') + '</span>' +
+      '</button>' +
+
+      TABS_DER.map(pestana).join('') +
+
+      // «Más»: el resto de vistas y las opciones de datos
+      '<button class="tab' + (enLaBarra ? '' : ' active') + '" data-app="menu" aria-label="Más opciones">' +
+        '<span class="tab-ic">' + ico.svg('menu') + '</span>' +
+        '<span class="tab-t">Más</span>' +
+      '</button>';
   }
 
   function renderNav() {
